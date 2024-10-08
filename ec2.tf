@@ -100,7 +100,3 @@ output "master_ip" {
 output "worker-node_ip" {
   value = [for i in aws_instance.wnode : i.public_ip]
 }
-
-output "myKey" {
-  value = tls_private_key.k8s_privkey.private_key_pem
-}
