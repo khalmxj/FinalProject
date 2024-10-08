@@ -10,7 +10,7 @@ resource "tls_private_key" "k8s_privkey" {
 # save to local computer
 resource "local_file" "mykeys" {
   content = tls_private_key.k8s_privkey.private_key_pem
-  filename = "mypkey.pem"
+  filename = "./mypkey.pem"
 }
 resource "aws_key_pair" "k8s_key_pair" {
   key_name   = var.key_name
