@@ -6,12 +6,6 @@ resource "tls_private_key" "k8s_privkey" {
     command = "echo '${self.public_key_pem}' > ./pubkey.pem"
   }
 }
-
-# save to local computer
-resource "local_file" "mykeys" {
-  content = tls_private_key.k8s_privkey.private_key_pem
-  filename = "./mypkey.pem"
-}
 resource "aws_key_pair" "k8s_key_pair" {
   key_name   = var.key_name
   public_key = tls_private_key.k8s_privkey.public_key_openssh
@@ -19,6 +13,12 @@ resource "aws_key_pair" "k8s_key_pair" {
     command = "echo '${tls_private_key.k8s_privkey.private_key_pem}' > ./myKey.pem"
   }
 }
+# save to local computer
+resource "local_file" "mykeys" {
+  content = tls_private_key.k8s_privkey.private_key_pem
+  filename = "mypkey"
+}
+
 # Create Controlplane (Master)
 resource "aws_instance" "master" {
   ami                         = var.ami["master"]
