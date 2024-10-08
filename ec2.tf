@@ -1,23 +1,24 @@
 # create ssh keypair for the instances
-resource "tls_private_key" "k8s_privkey" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
-  provisioner "local-exec" { # Create a "pubkey.pem" to your computer!!
-    command = "echo '${self.public_key_pem}' > ./pubkey.pem"
-  }
-}
+# resource "tls_private_key" "k8s_privkey" {
+#   algorithm = "RSA"
+#   rsa_bits  = 4096
+#   provisioner "local-exec" { # Create a "pubkey.pem" to your computer!!
+#     command = "echo '${self.public_key_pem}' > ./pubkey.pem"
+#   }
+# }
 resource "aws_key_pair" "k8s_key_pair" {
   key_name   = var.key_name
-  public_key = tls_private_key.k8s_privkey.public_key_openssh
-  provisioner "local-exec" { # Create a "myKey.pem" to your computer!!
-    command = "echo '${tls_private_key.k8s_privkey.private_key_pem}' > ./myKey.pem"
+  public_key = var.publick_key
+  #public_key = tls_private_key.k8s_privkey.public_key_openssh
+  #provisioner "local-exec" { # Create a "myKey.pem" to your computer!!
+  #  command = "echo '${tls_private_key.k8s_privkey.private_key_pem}' > ./myKey.pem"
   }
-}
-# save to local computer
-resource "local_file" "mykeys" {
-  content = tls_private_key.k8s_privkey.private_key_pem
-  filename = "mypkey"
-}
+
+# # save to local computer
+# resource "local_file" "mykeys" {
+#   content = tls_private_key.k8s_privkey.private_key_pem
+#   filename = "mypkey"
+# }
 
 # Create Controlplane (Master)
 resource "aws_instance" "master" {
@@ -98,4 +99,8 @@ output "master_ip" {
 
 output "worker-node_ip" {
   value = [for i in aws_instance.wnode : i.public_ip]
+}
+
+output "myKey" {
+  value = tls_private_key.k8s_privkey.private_key_pem
 }

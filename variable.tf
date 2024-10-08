@@ -34,6 +34,13 @@ variable "secret_key" {
   type = string
 }
 
+variable "publick_key" {
+  type = string
+}
+
+variable "private_key" {
+  type = string
+}
 
 variable "key_name" {
   description = "keypair for the cluster"
