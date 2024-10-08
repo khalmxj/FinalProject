@@ -22,7 +22,7 @@ variable "ami" {
   type        = map(string)
   default = {
     master      = "ami-0e8d228ad90af673b"
-    worker-node = "ami-07b36ea9852e986ad"
+    worker-node = "ami-0e8d228ad90af673b"
   }
 }
 
