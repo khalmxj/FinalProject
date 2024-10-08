@@ -40,7 +40,9 @@ resource "aws_instance" "master" {
   tags = {
     Name = "master-${var.k8s_name}"
   }
-
+provisioner "local-exec" {
+    command = "echo 'master ${self.public_ip}' >> ./files/hosts"
+  }
 }
 
 
@@ -63,7 +65,9 @@ resource "aws_instance" "wnode" {
   tags = {
     Name = "worker-node-${count.index}"
   }
-
+provisioner "local-exec" {
+    command = "echo 'worker-${count.index} ${self.public_ip}' >> ./files/hosts"
+  }
 }
 
 # Define the host as an Ansible resource for master
@@ -74,7 +78,7 @@ resource "ansible_host" "master" {
   variables = {
     ansible_user                 = "ubuntu"
     ansible_host                 = aws_instance.master.public_ip
-    ansible_ssh_private_key_file = "id_rsa"
+    ansible_ssh_private_key_file = "./id_rsa"
     node_hostname                = "master"
   }
 }
@@ -88,7 +92,7 @@ resource "ansible_host" "worker" {
   variables = {
     ansible_user                 = "ubuntu"
     ansible_host                 = aws_instance.wnode[count.index].public_ip
-    ansible_ssh_private_key_file = "id_rsa"
+    ansible_ssh_private_key_file = "./id_rsa"
     node_hostname                = "worker-node-${count.index}"
   }
 }
