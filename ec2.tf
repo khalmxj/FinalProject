@@ -39,7 +39,7 @@ resource "aws_instance" "master" {
 
 
 # Create Worker nodes for cluster
-resource "aws_instance" "worker-node" {
+resource "aws_instance" "wnode" {
   count                       = var.node_count
   ami                         = var.ami["worker-node"]
   instance_type               = var.instance_type["worker-node"]
