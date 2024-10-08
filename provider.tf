@@ -27,7 +27,7 @@ provider "aws" {
   secret_key = var.secret_key
 }
 
-/*terraform {
+terraform {
   cloud {
 
     organization = "Meraj-Natwest"
@@ -36,4 +36,4 @@ provider "aws" {
       name = "Project-Terraform"
     }
   }
-}*/
+}
