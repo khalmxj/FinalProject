@@ -33,7 +33,7 @@ terraform {
     organization = "Meraj-Natwest"
 
     workspaces {
-      name = "Project-Terraform"
+      name = "FinalProject"
     }
   }
 }

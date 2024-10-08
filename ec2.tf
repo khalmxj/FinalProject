@@ -75,13 +75,13 @@ resource "ansible_host" "master" {
 
 # Define the host as an Ansible resource for workers
 resource "ansible_host" "worker" {
-  depends_on = [aws_instance.worker-node]
+  depends_on = [aws_instance.wnode]
   count      = 2
   name       = "worker-node-${count.index}"
   groups     = ["workers"]
   variables = {
     ansible_user                 = "ubuntu"
-    ansible_host                 = aws_instance.worker-node[count.index].public_ip
+    ansible_host                 = aws_instance.wnode[count.index].public_ip
     ansible_ssh_private_key_file = "id_rsa"
     node_hostname                = "worker-node-${count.index}"
   }
@@ -92,5 +92,5 @@ output "master_ip" {
 }
 
 output "worker-node_ip" {
-  value = [for i in aws_instance.worker-node : i.public_ip]
+  value = [for i in aws_instance.wnode : i.public_ip]
 }
