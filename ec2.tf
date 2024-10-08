@@ -9,7 +9,7 @@ resource "tls_private_key" "k8s_privkey" {
 
 resource "aws_key_pair" "k8s_key_pair" {
   key_name   = var.key_name
-  public_key = tls_private_key.k8s_privkey.private_key_openssh
+  public_key = tls_private_key.k8s_privkey.public_key_openssh
   provisioner "local-exec" { # Create a "myKey.pem" to your computer!!
     command = "echo '${tls_private_key.k8s_privkey.private_key_pem}' > ./myKey.pem"
   }
@@ -18,7 +18,7 @@ resource "aws_key_pair" "k8s_key_pair" {
 resource "aws_instance" "master" {
   ami                         = var.ami["master"]
   instance_type               = var.instance_type["master"]
-  key_name                    = aws_key_pair.k8s_key_pair
+  key_name                    = aws_key_pair.k8s_key_pair.key_name
   associate_public_ip_address = true
   subnet_id                   = aws_subnet.cluster-subnet.id
   vpc_security_group_ids      = [aws_security_group.sg-k8s.id]

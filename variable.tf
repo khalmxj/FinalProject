@@ -8,7 +8,7 @@ variable "cidr_vpc" {
 variable "cidr_subnet" {
   description = "cidr range for public VPC Subnet"
   type        = string
-  default     = "10.192.1.0/24"
+  default     = "100.192.1.0/24"
 }
 
 variable "k8s_name" {
