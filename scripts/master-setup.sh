@@ -1,11 +1,6 @@
 #!/bin/bash
 # master-setup.sh
 
-# Setup kubeconfig for kubectl access
-sudo mkdir -p /home/ubuntu/.kube
-sudo cp -i /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
-sudo chown ubuntu:ubuntu /home/ubuntu/.kube/config
-
 # Install Ansible on the master node
 sudo apt-add-repository --yes --update ppa:ansible/ansible
 sudo apt-get update -y
@@ -25,6 +20,6 @@ done
 sshpass -p "ubuntu" ssh-copy-id -o StrictHostKeyChecking=no ubuntu@localhost
 
 # Run the Ansible playbook to configure the cluster
-ansible-playbook /home/ubuntu/kubernetes-setup.yaml -i /home/ubuntu/hosts
+#ansible-playbook /home/ubuntu/kubernetes-setup.yaml -i /home/ubuntu/hosts
 
 echo "Ansible setup complete. Kubernetes configured."

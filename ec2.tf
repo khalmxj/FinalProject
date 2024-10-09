@@ -36,8 +36,7 @@ provisioner "remote-exec" {
     inline = [
       "echo 'master ${self.private_ip}' | sudo tee -a /etc/hosts"
     ]
-
-    connection {
+  connection {
       type        = "ssh"
       user        = "ubuntu"
       private_key = var.private_key
@@ -48,8 +47,26 @@ provisioner "remote-exec" {
 provisioner "file" {
   source      = "playbook/kubernetes-setup.yaml"
   destination = "/home/ubuntu/kubernetes-setup.yaml"
+connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = var.private_key
+      host        = self.public_ip
+    }
 }
+# Run the Ansible playbook to set up Kubernetes
+  provisioner "remote-exec" {
+    inline = [
+      "ansible-playbook /home/ubuntu/kubernetes-setup.yaml"
+    ]
 
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = var.private_key
+      host        = self.public_ip
+    }
+  }
 }
 
 # Create Worker nodes for cluster
@@ -82,8 +99,7 @@ resource "aws_instance" "wnode" {
     inline = [
       "echo 'worker-${count.index} ${self.private_ip}' | sudo tee -a /etc/hosts"
     ]
-
-    connection {
+  connection {
       type        = "ssh"
       user        = "ubuntu"
       private_key = var.private_key
