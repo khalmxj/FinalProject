@@ -88,7 +88,6 @@ resource "aws_instance" "wnode" {
   user_data = <<-EOF
     #!/bin/bash
     $(cat ./scripts/common-setup.sh)
-    $(cat ./scripts/worker-setup.sh)
   EOF
 
   tags = {
