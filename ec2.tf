@@ -52,12 +52,13 @@ resource "aws_instance" "master" {
   # Master node hots file update
 provisioner "remote-exec" {
     inline = [
-      "echo 'master ${self.private_ip}' | sudo tee -a /etc/hosts",
+      "sudo echo 'master ${self.private_ip}' | sudo tee -a /etc/hosts",
+      "sudo echo '[workers]' | sudo tee -a /etc/hosts",
       # Backup existing Ansible hosts file
       "sudo cp /etc/ansible/hosts /etc/ansible/hosts.bak",
       #"sudo echo 'worker-${count.index} ${self.private_ip}' | sudo tee -a /etc/hosts",
-      #"sudo cp /etc/hosts /etc/ansible/hosts",
-      "sudo echo '[workers]' | sudo tee -a /home/ubuntu/hosts"
+      "sudo cp /etc/hosts /etc/ansible/hosts",
+      
     ]
   connection {
       type        = "ssh"
@@ -69,7 +70,7 @@ provisioner "remote-exec" {
 # Copy the Ansible playbook to the master node
 provisioner "file" {
   source      = "playbook/kubernetes-setup.yaml"
-  destination = "/home/ubuntu/kubernetes-setup.yaml"
+  destination = "/etc/ansible/kubernetes-setup.yaml"
 connection {
       type        = "ssh"
       user        = "ubuntu"
@@ -80,7 +81,7 @@ connection {
 # Run the Ansible playbook to set up Kubernetes
   provisioner "remote-exec" {
     inline = [
-      "ansible-playbook /home/ubuntu/kubernetes-setup.yaml"
+      "ansible-playbook /etc/ansible/kubernetes-setup.yaml"
     ]
 
     connection {
@@ -156,8 +157,8 @@ resource "ansible_host" "master" {
   groups     = ["master"]
   variables = {
     ansible_user                 = "ubuntu"
-    ansible_host                 = aws_instance.master.public_ip
-    ansible_ssh_private_key_file = "./id_rsa"
+    ansible_host                 = aws_instance.master.private_ip
+    ansible_ssh_private_key_file = "/home/ubuntu/.ssh/id_rsa"
     node_hostname                = "master"
   }
 }
@@ -169,8 +170,8 @@ resource "ansible_host" "worker" {
   groups     = ["workers"]
   variables = {
     ansible_user                 = "ubuntu"
-    ansible_host                 = aws_instance.wnode[count.index].public_ip
-    ansible_ssh_private_key_file = "./id_rsa"
+    ansible_host                 = aws_instance.wnode[count.index].private_ip
+    ansible_ssh_private_key_file = "/home/ubuntu/.ssh/id_rsa"
     node_hostname                = "worker-node-${count.index}"
   }
 }

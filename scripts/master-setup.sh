@@ -1,5 +1,9 @@
 #!/bin/bash
 # common + master-setup.sh
+
+# Change hostname
+sudo hostnamectl set-hostname master
+
 echo "I am in Master +common before apt update."
 # Update system
 sudo apt-get update -y
@@ -20,6 +24,12 @@ echo "Master after apt update"
 if [ ! -f /home/ubuntu/.ssh/id_rsa ]; then
     sudo -u ubuntu ssh-keygen -t rsa -N "" -f /home/ubuntu/.ssh/id_rsa
 fi
+
+# Ensure the .ssh directory and keys have the correct permissions
+sudo chown -R ubuntu:ubuntu /home/ubuntu/.ssh
+sudo chmod 700 /home/ubuntu/.ssh
+sudo chmod 600 /home/ubuntu/.ssh/id_rsa
+sudo chmod 644 /home/ubuntu/.ssh/id_rsa.pub
 
 # Copy the public key to the workers (passwordless SSH)
 for worker_ip in $(awk '/worker/{print $2}' /etc/hosts); do
