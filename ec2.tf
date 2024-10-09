@@ -39,7 +39,8 @@ resource "aws_instance" "master" {
   provisioner "remote-exec" {
     inline = [
       "chmod +x /home/ubuntu/master-setup.sh",
-      "/home/ubuntu/master-setup.sh"
+      "/home/ubuntu/master-setup.sh",
+      "for ip in $(echo ${join(" ", concat(aws_instance.wnode[*].private_ip, [self.private_ip]))}); do echo $ip >> /home/ubuntu/ips.txt; done"
     ]
 
     connection {
