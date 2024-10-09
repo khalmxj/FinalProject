@@ -8,11 +8,6 @@ sudo apt-get upgrade -y
 # Install dependencies
 sudo apt-get install -y curl gnupg software-properties-common sshpass
 
-# Copy the hosts file to /etc/hosts
-if [ -f /home/ubuntu/hosts ]; then
-  cat /home/ubuntu/hosts | sudo tee -a /etc/hosts
-fi
-
 echo "Basic setup complete."
 echo " I am master start"
 # Install Ansible on the master node
@@ -27,7 +22,7 @@ if [ ! -f /home/ubuntu/.ssh/id_rsa ]; then
 fi
 
 # Copy the public key to the workers (passwordless SSH)
-for worker_ip in $(awk '/worker/{print $2}' /home/ubuntu/hosts); do
+for worker_ip in $(awk '/worker/{print $2}' /etc/hosts); do
   sshpass -p "ubuntu" ssh-copy-id -o StrictHostKeyChecking=no ubuntu@$worker_ip
 done
 
