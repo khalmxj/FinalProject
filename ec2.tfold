@@ -1,9 +1,26 @@
-# Create Controlplane (Master)
+# create ssh keypair for the instances
+# resource "tls_private_key" "k8s_privkey" {
+#   algorithm = "RSA"
+#   rsa_bits  = 4096
+#   provisioner "local-exec" { # Create a "pubkey.pem" to your computer!!
+#     command = "echo '${self.public_key_pem}' > ./pubkey.pem"
+#   }
+# }
 resource "aws_key_pair" "k8s_key_pair" {
   key_name   = var.key_name
   public_key = var.publick_key
+  #public_key = tls_private_key.k8s_privkey.public_key_openssh
+  #provisioner "local-exec" { # Create a "myKey.pem" to your computer!!
+  #  command = "echo '${tls_private_key.k8s_privkey.private_key_pem}' > ./myKey.pem"
   }
 
+# # save to local computer
+# resource "local_file" "mykeys" {
+#   content = tls_private_key.k8s_privkey.private_key_pem
+#   filename = "mypkey"
+# }
+
+# Create Controlplane (Master)
 resource "aws_instance" "master" {
   ami                         = var.ami["master"]
   instance_type               = var.instance_type["master"]
@@ -15,33 +32,19 @@ resource "aws_instance" "master" {
   root_block_device {
     volume_type = "gp2"
     volume_size = 14
+
   }
-
-  # Use the shell script for user data
-  user_data = <<-EOF
-    #!/bin/bash
-    $(cat ./scripts/common-setup.sh)
-    $(cat ./scripts/master-setup.sh)
-  EOF
-
   timeouts {
     create = "10m"
   }
-
   tags = {
     Name = "master-${var.k8s_name}"
   }
-  # Master node hots file update
-  provisioner "local-exec" {
-    command = "echo 'master ${self.private_ip}' >> ./files/hosts"
+provisioner "local-exec" {
+    command = "echo 'master ${self.public_ip}' >> ./files/hosts"
   }
-# Copy the Ansible playbook to the master node
-provisioner "file" {
-  source      = "playbook/kubernetes-setup.yaml"
-  destination = "/home/ubuntu/kubernetes-setup.yaml"
 }
 
-}
 
 # Create Worker nodes for cluster
 resource "aws_instance" "wnode" {
@@ -56,24 +59,18 @@ resource "aws_instance" "wnode" {
   root_block_device {
     volume_type = "gp2"
     volume_size = 8
-  }
 
-  # Use the shell script for user data
-  user_data = <<-EOF
-    #!/bin/bash
-    $(cat ./scripts/common-setup.sh)
-    $(cat ./scripts/worker-setup.sh)
-  EOF
+  }
 
   tags = {
     Name = "worker-node-${count.index}"
   }
-  # Worker node hosts file update
-  provisioner "local-exec" {
-    command = "echo 'worker-${count.index} ${self.private_ip}' >> ./files/hosts"
+provisioner "local-exec" {
+    command = "echo 'worker-${count.index} ${self.public_ip}' >> ./files/hosts"
   }
 }
-# Define Ansible Hosts
+
+# Define the host as an Ansible resource for master
 resource "ansible_host" "master" {
   depends_on = [aws_instance.master]
   name       = "controlplane"
@@ -86,9 +83,10 @@ resource "ansible_host" "master" {
   }
 }
 
+# Define the host as an Ansible resource for workers
 resource "ansible_host" "worker" {
   depends_on = [aws_instance.wnode]
-  count      = var.node_count
+  count      = 2
   name       = "worker-node-${count.index}"
   groups     = ["workers"]
   variables = {
@@ -97,4 +95,12 @@ resource "ansible_host" "worker" {
     ansible_ssh_private_key_file = "./id_rsa"
     node_hostname                = "worker-node-${count.index}"
   }
+}
+
+output "master_ip" {
+  value = aws_instance.master.public_ip
+}
+
+output "worker-node_ip" {
+  value = [for i in aws_instance.wnode : i.public_ip]
 }

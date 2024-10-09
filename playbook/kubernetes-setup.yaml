@@ -1,0 +1,36 @@
+---
+- name: Configure Kubernetes Cluster
+  hosts: all
+  become: true
+  tasks:
+
+    - name: Install Docker and Kubernetes on all nodes
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - docker.io
+        - kubelet
+        - kubeadm
+        - kubectl
+
+    - name: Initialize Kubernetes on master node
+      shell: |
+        kubeadm init --pod-network-cidr=10.244.0.0/16
+        mkdir -p /home/ubuntu/.kube
+        cp /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
+        chown ubuntu:ubuntu /home/ubuntu/.kube/config
+      when: "'master' in inventory_hostname"
+
+    - name: Install Flannel network plugin (on master)
+      shell: |
+        kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+      when: "'master' in inventory_hostname"
+
+    - name: Get Kubernetes join command (on master)
+      shell: kubeadm token create --print-join-command > /home/ubuntu/kubeadm-join.out
+      when: "'master' in inventory_hostname"
+
+    - name: Join worker nodes to the cluster
+      shell: "{{ lookup('file', '/home/ubuntu/kubeadm-join.out') }}"
+      when: "'worker' in inventory_hostname"
