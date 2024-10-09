@@ -55,14 +55,9 @@ provisioner "remote-exec" {
       "echo 'master ${self.private_ip}' | sudo tee -a /etc/hosts",
       # Backup existing Ansible hosts file
       "sudo cp /etc/ansible/hosts /etc/ansible/hosts.bak",
-      # Create a new hosts file with the master and worker IP addresses
-      "sudo echo '[master]' | sudo tee /home/ubuntu/hosts",
-      #"sudo echo 'worker-${count.index} ${self.private_ip}' | sudo tee -a /etc/hosts",
+      "sudo echo 'worker-${count.index} ${self.private_ip}' | sudo tee -a /etc/hosts",
       #"sudo cp /etc/hosts /etc/ansible/hosts",
       "sudo echo '[workers]' | sudo tee -a /home/ubuntu/hosts"
-    ] + [
-      for idx in aws_instance.wnode : 
-      "sudo echo 'worker ${idx.private_ip}' | sudo tee -a /home/ubuntu/hosts"
     ]
   connection {
       type        = "ssh"
