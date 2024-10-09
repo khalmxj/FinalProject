@@ -32,8 +32,17 @@ resource "aws_instance" "master" {
     Name = "master-${var.k8s_name}"
   }
   # Master node hots file update
-  provisioner "local-exec" {
-    command = "echo 'master ${self.private_ip}' >> ./files/hosts"
+provisioner "remote-exec" {
+    inline = [
+      "echo 'master ${self.private_ip}' | sudo tee -a /etc/hosts"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.private_key)
+      host        = self.public_ip
+    }
   }
 # Copy the Ansible playbook to the master node
 provisioner "file" {
@@ -69,8 +78,17 @@ resource "aws_instance" "wnode" {
     Name = "worker-node-${count.index}"
   }
   # Worker node hosts file update
-  provisioner "local-exec" {
-    command = "echo 'worker-${count.index} ${self.private_ip}' >> ./files/hosts"
+ provisioner "remote-exec" {
+    inline = [
+      "echo 'worker-${count.index} ${self.private_ip}' | sudo tee -a /etc/hosts"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.private_key)
+      host        = self.public_ip
+    }
   }
 }
 # Define Ansible Hosts
