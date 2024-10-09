@@ -36,11 +36,4 @@ terraform {
       name = "FinalProject"
     }
   }
-backend "remote" {
-    organization = "Meraj-Natwest"
-
-    workspaces {
-      name = "FinalProject"
-    }
-  }
 }
