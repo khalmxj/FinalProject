@@ -1,11 +1,12 @@
 #!/bin/bash
 # master-setup.sh
-
+echo " I am master start"
 # Install Ansible on the master node
 sudo apt-add-repository --yes --update ppa:ansible/ansible
 sudo apt-get update -y
 sudo apt-get install -y ansible sshpass # Install sshpass for passwordless authentication setup
 
+echo "Master after apt update"
 # Generate SSH keys for passwordless authentication
 if [ ! -f /home/ubuntu/.ssh/id_rsa ]; then
     sudo -u ubuntu ssh-keygen -t rsa -N "" -f /home/ubuntu/.ssh/id_rsa

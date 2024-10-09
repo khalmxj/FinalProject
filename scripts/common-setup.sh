@@ -1,10 +1,11 @@
 #!/bin/bash
 # common-setup.sh
-
+echo "I am in common before apt update."
 # Update system
 sudo apt-get update -y
 sudo apt-get upgrade -y
 
+echo "I am in common after apt update"
 # Install dependencies
 sudo apt-get install -y curl gnupg software-properties-common sshpass
 

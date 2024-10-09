@@ -19,7 +19,9 @@ resource "aws_instance" "master" {
 
   # Use the shell script for user data
   user_data = <<-EOF
-    #!/bin/bash
+    #!/bin/bash -xe
+    exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+    sleep 60  # Wait for 60 seconds to ensure the instance is fully initialized
     $(cat ./scripts/common-setup.sh)
     $(cat ./scripts/master-setup.sh)
   EOF
