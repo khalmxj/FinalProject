@@ -41,7 +41,7 @@ resource "aws_instance" "master" {
       "chmod +x /home/ubuntu/master-setup.sh",
       "/home/ubuntu/master-setup.sh",
       "echo 'master ${self.private_ip}' >> /home/ubuntu/ips.txt",
-    "for i in ${range(var.node_count)}; do echo 'worker-${i} ${aws_instance.worker[i].private_ip}' >> /home/ubuntu/ips.txt; done"
+    "for i in ${range(var.node_count)}; do echo 'worker-${i} ${aws_instance.wnode[i].private_ip}' >> /home/ubuntu/ips.txt; done"
     ]
     connection {
       type        = "ssh"
