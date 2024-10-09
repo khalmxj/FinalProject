@@ -40,7 +40,7 @@ provisioner "remote-exec" {
     connection {
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.private_key)
+      private_key = var.private_key
       host        = self.public_ip
     }
   }
@@ -86,7 +86,7 @@ resource "aws_instance" "wnode" {
     connection {
       type        = "ssh"
       user        = "ubuntu"
-      private_key = file(var.private_key)
+      private_key = var.private_key
       host        = self.public_ip
     }
   }
