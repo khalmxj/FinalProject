@@ -16,22 +16,38 @@ resource "aws_instance" "master" {
     volume_type = "gp2"
     volume_size = 14
   }
-
-  # Use the shell script for user data
-  user_data = <<-EOF
-    #!/bin/bash -xe
-    exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
-    sleep 60  # Wait for 60 seconds to ensure the instance is fully initialized
-    $(cat ./scripts/common-setup.sh)
-    $(cat ./scripts/master-setup.sh)
-  EOF
-
   timeouts {
     create = "10m"
   }
 
   tags = {
     Name = "master-${var.k8s_name}"
+  }
+# Copy Scripts to Master node 
+  provisioner "file" {
+    source      = "scripts/master-setup.sh"
+    destination = "/home/ubuntu/master-setup.sh"
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = var.private_key
+      host        = self.public_ip
+    }
+  }
+# setting permission to master-setup and ran 
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x /home/ubuntu/master-setup.sh",
+      "/home/ubuntu/master-setup.sh"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = var.private_key
+      host        = self.public_ip
+    }
   }
   # Master node hots file update
 provisioner "remote-exec" {
@@ -85,15 +101,35 @@ resource "aws_instance" "wnode" {
     volume_type = "gp2"
     volume_size = 8
   }
-
-  # Use the shell script for user data
-  user_data = <<-EOF
-    #!/bin/bash
-    $(cat ./scripts/common-setup.sh)
-  EOF
-
   tags = {
     Name = "worker-node-${count.index}"
+  }
+ # Copy the common setup script to worker nodes
+  provisioner "file" {
+    source      = "scripts/common-setup.sh"
+    destination = "/home/ubuntu/common-setup.sh"
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = var.private_key
+      host        = self.public_ip
+    }
+  }
+
+  # Setting permission to common-setup and ran 
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x /home/ubuntu/common-setup.sh",
+      "/home/ubuntu/common-setup.sh"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = var.private_key
+      host        = self.public_ip
+    }
   }
   # Worker node hosts file update
  provisioner "remote-exec" {
