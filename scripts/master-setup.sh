@@ -35,12 +35,12 @@ sudo chmod 644 /home/ubuntu/.ssh/id_rsa.pub
 cat /home/ubuntu/.ssh/id_rsa.pub | sudo tee -a /home/ubuntu/.ssh/authorized_keys > /dev/null
 
 # Copy the public key to the workers (passwordless SSH)
-for worker_ip in $(awk '/worker/{print $2}' /etc/hosts); do
-  sshpass -p "ubuntu" ssh-copy-id -o StrictHostKeyChecking=no ubuntu@$worker_ip
-done
+#for worker_ip in $(awk '/worker/{print $2}' /etc/hosts); do
+#  sshpass -p "ubuntu" ssh-copy-id -o StrictHostKeyChecking=no ubuntu@$worker_ip
+#done
 
 # Copy the public key to the master itself (for Ansible self-SSH)
-sshpass -p "ubuntu" ssh-copy-id -o StrictHostKeyChecking=no ubuntu@localhost
+#sshpass -p "ubuntu" ssh-copy-id -o StrictHostKeyChecking=no ubuntu@localhost
 
 # Run the Ansible playbook to configure the cluster
 #ansible-playbook /home/ubuntu/kubernetes-setup.yaml -i /home/ubuntu/hosts

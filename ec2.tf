@@ -50,48 +50,49 @@ resource "aws_instance" "master" {
     }
   }
   # Master node hots file update
-provisioner "remote-exec" {
-    inline = [
-      "sudo echo 'master ${self.private_ip}' | sudo tee -a /etc/hosts",
-      "sudo echo '[workers]' | sudo tee -a /etc/hosts",
-      # Backup existing Ansible hosts file
-      "sudo cp /etc/ansible/hosts /etc/ansible/hosts.bak",
-      #"sudo echo 'worker-${count.index} ${self.private_ip}' | sudo tee -a /etc/hosts",
-      "sudo cp /etc/hosts /etc/ansible/hosts",
+# provisioner "remote-exec" {
+#     inline = [
+#       "sudo echo 'master ${self.private_ip}' | sudo tee -a /etc/hosts",
+#       "sudo echo '[workers]' | sudo tee -a /etc/hosts",
+#       # Backup existing Ansible hosts file
+#       "sudo cp /etc/ansible/hosts /etc/ansible/hosts.bak",
+#       #"sudo echo 'worker-${count.index} ${self.private_ip}' | sudo tee -a /etc/hosts",
+#       "sudo cp /etc/hosts /etc/ansible/hosts",
       
-    ]
-  connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = var.private_key
-      host        = self.public_ip
-    }
-  }
+#     ]
+#   connection {
+#       type        = "ssh"
+#       user        = "ubuntu"
+#       private_key = var.private_key
+#       host        = self.public_ip
+#     }
+#   }
 # Copy the Ansible playbook to the master node
-provisioner "file" {
-  source      = "playbook/kubernetes-setup.yaml"
-  destination = "/etc/ansible/kubernetes-setup.yaml"
-connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = var.private_key
-      host        = self.public_ip
-    }
-}
-# Run the Ansible playbook to set up Kubernetes
-  provisioner "remote-exec" {
-    inline = [
-      "chmod +x /etc/ansible/kubernetes-setup.yaml",
-      "ansible-playbook /etc/ansible/kubernetes-setup.yaml"
-    ]
+# provisioner "file" {
+#   source      = "playbook/kubernetes-setup.yaml"
+#   destination = "/home/ubuntu/kubernetes-setup.yaml"
+# connection {
+#       type        = "ssh"
+#       user        = "ubuntu"
+#       private_key = var.private_key
+#       host        = self.public_ip
+#     }
+# }
+# # Run the Ansible playbook to set up Kubernetes
+#   provisioner "remote-exec" {
+#     inline = [
+#       "sudo mv /home/ubuntu/kubernetes-setup.yaml /etc/ansible/kubernetes-setup.yaml",
+#       "chmod +x /etc/ansible/kubernetes-setup.yaml",
+#       "ansible-playbook /etc/ansible/kubernetes-setup.yaml"
+#     ]
 
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = var.private_key
-      host        = self.public_ip
-    }
-  }
+#     connection {
+#       type        = "ssh"
+#       user        = "ubuntu"
+#       private_key = var.private_key
+#       host        = self.public_ip
+#     }
+#   }
 }
 
 # Create Worker nodes for cluster
