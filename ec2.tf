@@ -52,7 +52,13 @@ resource "aws_instance" "master" {
   # Master node hots file update
 provisioner "remote-exec" {
     inline = [
-      "echo 'master ${self.private_ip}' | sudo tee -a /etc/hosts"
+      "echo 'master ${self.private_ip}' | sudo tee -a /etc/hosts",
+      # Backup existing Ansible hosts file
+      "sudo cp /etc/ansible/hosts /etc/ansible/hosts.bak",
+      # Create a new hosts file with the master and worker IP addresses
+      "sudo echo '[master]' | sudo tee /home/ubuntu/hosts",
+      "sudo echo 'worker-${count.index} ${self.private_ip}' | sudo tee -a /etc/hosts",
+      "sudo cp /etc/hosts /etc/ansible/hosts",
     ]
   connection {
       type        = "ssh"
