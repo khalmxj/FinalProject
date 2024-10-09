@@ -81,6 +81,7 @@ connection {
 # Run the Ansible playbook to set up Kubernetes
   provisioner "remote-exec" {
     inline = [
+      "chmod +x /etc/ansible/kubernetes-setup.yaml",
       "ansible-playbook /etc/ansible/kubernetes-setup.yaml"
     ]
 
