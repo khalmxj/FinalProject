@@ -11,11 +11,11 @@ terraform {
       source  = "ansible/ansible"
       version = "1.3.0"
     }
-    # TLS block for keypairs
-    tls = {
-      source  = "hashicorp/tls"
-      version = "4.0.4"
-    }
+    # # TLS block for keypairs
+    # tls = {
+    #   source  = "hashicorp/tls"
+    #   version = "4.0.4"
+    # }
 
   } # end of provider block
 }   # End of Terraform main block
@@ -27,13 +27,13 @@ provider "aws" {
   secret_key = var.secret_key
 }
 
-terraform {
-  cloud {
+# terraform {
+#   cloud {
 
-    organization = "Meraj-Natwest"
+#     organization = "Meraj-Natwest"
 
-    workspaces {
-      name = "FinalProject"
-    }
-  }
-}
+#     workspaces {
+#       name = "FinalProject"
+#     }
+#   }
+# }

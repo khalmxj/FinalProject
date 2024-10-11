@@ -1,0 +1,127 @@
+---
+- name: Setup Kubernetes Cluster
+  hosts: all
+  become: yes
+  tasks:
+    - name: Disable UFW firewall
+      command: ufw disable
+
+    - name: Disable swap
+      shell: |
+        swapoff -a
+        sed -i '/swap/d' /etc/fstab
+
+    - name: Update sysctl settings for Kubernetes networking
+      blockinfile:
+        path: /etc/sysctl.d/kubernetes.conf
+        block: |
+          net.bridge.bridge-nf-call-ip6tables = 1
+          net.bridge.bridge-nf-call-iptables = 1
+
+    - name: Apply sysctl settings
+      command: sysctl --system
+
+    - name: Install Docker dependencies
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg-agent
+          - software-properties-common
+        state: present
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install Docker
+      apt:
+        name:
+          - docker-ce=5:19.03.10~3-0~ubuntu-focal
+          - containerd.io
+        state: present
+
+    - name: Add Kubernetes GPG key
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+
+    - name: Add Kubernetes repository
+      apt_repository:
+        repo: "deb https://apt.kubernetes.io/ kubernetes-xenial main"
+        state: present
+
+    - name: Install Kubernetes components
+      apt:
+        name:
+          - kubeadm=1.18.5-00
+          - kubelet=1.18.5-00
+          - kubectl=1.18.5-00
+        state: present
+
+    - name: Hack for LXC containers (if needed)
+      block:
+        - name: Create /dev/kmsg
+          command: mknod /dev/kmsg c 1 11
+        - name: Add /dev/kmsg creation to rc.local
+          blockinfile:
+            path: /etc/rc.local
+            block: |
+              #!/bin/sh -e
+              mknod /dev/kmsg c 1 11
+        - name: Make rc.local executable
+          file:
+            path: /etc/rc.local
+            mode: '0755'
+      when: ansible_virtualization_type == "lxc"
+
+- name: Initialize Kubernetes Master
+  hosts: kmaster
+  become: yes
+  tasks:
+    - name: Initialize Kubernetes Cluster
+      command: kubeadm init --apiserver-advertise-address=172.16.16.100 --pod-network-cidr=192.168.0.0/16 --ignore-preflight-errors=all
+
+    - name: Deploy Calico network
+      command: kubectl --kubeconfig=/etc/kubernetes/admin.conf create -f https://docs.projectcalico.org/v3.14/manifests/calico.yaml
+
+    - name: Generate cluster join command
+      command: kubeadm token create --print-join-command
+      register: join_command
+
+    - name: Save join command to file
+      copy:
+        content: "{{ join_command.stdout }}"
+        dest: /join_command.txt
+
+    - name: Setup kubectl for non-root user
+      become: no
+      tasks:
+        - name: Create .kube directory
+          file:
+            path: /home/{{ ansible_user }}/.kube
+            state: directory
+            owner: "{{ ansible_user }}"
+            group: "{{ ansible_user }}"
+
+        - name: Copy admin.conf to user's kube config
+          copy:
+            src: /etc/kubernetes/admin.conf
+            dest: /home/{{ ansible_user }}/.kube/config
+            owner: "{{ ansible_user }}"
+            group: "{{ ansible_user }}"
+            mode: '0644'
+
+- name: Join Kubernetes Worker Nodes
+  hosts: kworker
+  become: yes
+  tasks:
+    - name: Join the cluster
+      command: "{{ lookup('file', '/join_command.txt') }}"

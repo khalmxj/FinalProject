@@ -1,8 +1,8 @@
 # Create Controlplane (Master)
 resource "aws_key_pair" "k8s_key_pair" {
   key_name   = var.key_name
-  public_key = var.publick_key
-  }
+  public_key = file(var.publick_key)
+}
 
 resource "aws_instance" "master" {
   ami                         = var.ami["master"]
@@ -23,7 +23,7 @@ resource "aws_instance" "master" {
   tags = {
     Name = "master-${var.k8s_name}"
   }
-# Copy Scripts to Master node 
+  # Copy Scripts to Master node 
   provisioner "file" {
     source      = "scripts/master-setup.sh"
     destination = "/home/ubuntu/master-setup.sh"
@@ -31,69 +31,70 @@ resource "aws_instance" "master" {
     connection {
       type        = "ssh"
       user        = "ubuntu"
-      private_key = var.private_key
+      private_key = file(var.private_key)
       host        = self.public_ip
     }
   }
-# setting permission to master-setup and ran 
+  # setting permission to master-setup and ran 
   provisioner "remote-exec" {
     inline = [
+      #data.template_file.master_setup.rendered
       "chmod +x /home/ubuntu/master-setup.sh",
       "/home/ubuntu/master-setup.sh",
-      "echo 'master ${self.private_ip}' >> /home/ubuntu/ips.txt",
-    "for i in ${range(var.node_count)}; do echo 'worker-${i} ${aws_instance.wnode[i].private_ip}' >> /home/ubuntu/ips.txt; done"
+      # "echo 'master ${self.private_ip}' >> /home/ubuntu/ips.txt",
+      # "for i in $(seq 0 $((${var.node_count} - 1))); do echo 'worker-${i} ${aws_instance.wnode[i].private_ip}' >> /home/ubuntu/ips.txt; done"
     ]
     connection {
       type        = "ssh"
       user        = "ubuntu"
-      private_key = var.private_key
+      private_key = file(var.private_key)
       host        = self.public_ip
     }
   }
   # Master node hots file update
-# provisioner "remote-exec" {
-#     inline = [
-#       "sudo echo 'master ${self.private_ip}' | sudo tee -a /etc/hosts",
-#       "sudo echo '[workers]' | sudo tee -a /etc/hosts",
-#       # Backup existing Ansible hosts file
-#       "sudo cp /etc/ansible/hosts /etc/ansible/hosts.bak",
-#       #"sudo echo 'worker-${count.index} ${self.private_ip}' | sudo tee -a /etc/hosts",
-#       "sudo cp /etc/hosts /etc/ansible/hosts",
-      
-#     ]
-#   connection {
-#       type        = "ssh"
-#       user        = "ubuntu"
-#       private_key = var.private_key
-#       host        = self.public_ip
-#     }
-#   }
-# Copy the Ansible playbook to the master node
-# provisioner "file" {
-#   source      = "playbook/kubernetes-setup.yaml"
-#   destination = "/home/ubuntu/kubernetes-setup.yaml"
-# connection {
-#       type        = "ssh"
-#       user        = "ubuntu"
-#       private_key = var.private_key
-#       host        = self.public_ip
-#     }
-# }
-# # Run the Ansible playbook to set up Kubernetes
-#   provisioner "remote-exec" {
-#     inline = [
-#       "sudo mv /home/ubuntu/kubernetes-setup.yaml /etc/ansible/kubernetes-setup.yaml",
-#       "chmod +x /etc/ansible/kubernetes-setup.yaml",
-#       "ansible-playbook /etc/ansible/kubernetes-setup.yaml"
-#     ]
+  # provisioner "remote-exec" {
+  #     inline = [
+  #       "sudo echo 'master ${self.private_ip}' | sudo tee -a /etc/hosts",
+  #       "sudo echo '[workers]' | sudo tee -a /etc/hosts",
+  #       # Backup existing Ansible hosts file
+  #       "sudo cp /etc/ansible/hosts /etc/ansible/hosts.bak",
+  #       #"sudo echo 'worker-${count.index} ${self.private_ip}' | sudo tee -a /etc/hosts",
+  #       "sudo cp /etc/hosts /etc/ansible/hosts",
 
-#     connection {
-#       type        = "ssh"
-#       user        = "ubuntu"
-#       private_key = var.private_key
-#       host        = self.public_ip
-#     }
-#   }
+  #     ]
+  #   connection {
+  #       type        = "ssh"
+  #       user        = "ubuntu"
+  #       private_key = var.private_key
+  #       host        = self.public_ip
+  #     }
+  #   }
+  # Copy the Ansible playbook to the master node
+  # provisioner "file" {
+  #   source      = "playbook/kubernetes-setup.yaml"
+  #   destination = "/home/ubuntu/kubernetes-setup.yaml"
+  # connection {
+  #       type        = "ssh"
+  #       user        = "ubuntu"
+  #       private_key = var.private_key
+  #       host        = self.public_ip
+  #     }
+  # }
+  # # Run the Ansible playbook to set up Kubernetes
+  #   provisioner "remote-exec" {
+  #     inline = [
+  #       "sudo mv /home/ubuntu/kubernetes-setup.yaml /etc/ansible/kubernetes-setup.yaml",
+  #       "chmod +x /etc/ansible/kubernetes-setup.yaml",
+  #       "ansible-playbook /etc/ansible/kubernetes-setup.yaml"
+  #     ]
+
+  #     connection {
+  #       type        = "ssh"
+  #       user        = "ubuntu"
+  #       private_key = var.private_key
+  #       host        = self.public_ip
+  #     }
+  #   }
 }
 
 # Create Worker nodes for cluster
@@ -113,7 +114,7 @@ resource "aws_instance" "wnode" {
   tags = {
     Name = "worker-node-${count.index}"
   }
- # Copy the common setup script to worker nodes
+  # Copy the common setup script to worker nodes
   provisioner "file" {
     source      = "scripts/common-setup.sh"
     destination = "/home/ubuntu/common-setup.sh"
@@ -121,7 +122,7 @@ resource "aws_instance" "wnode" {
     connection {
       type        = "ssh"
       user        = "ubuntu"
-      private_key = var.private_key
+      private_key = file(var.private_key)
       host        = self.public_ip
     }
   }
@@ -136,19 +137,19 @@ resource "aws_instance" "wnode" {
     connection {
       type        = "ssh"
       user        = "ubuntu"
-      private_key = var.private_key
+      private_key = file(var.private_key)
       host        = self.public_ip
     }
   }
   # Worker node hosts file update
- provisioner "remote-exec" {
+  provisioner "remote-exec" {
     inline = [
       "echo 'worker-${count.index} ${self.private_ip}' | sudo tee -a /etc/hosts"
     ]
-  connection {
+    connection {
       type        = "ssh"
       user        = "ubuntu"
-      private_key = var.private_key
+      private_key = file(var.private_key)
       host        = self.public_ip
     }
   }
@@ -176,5 +177,14 @@ resource "ansible_host" "worker" {
     ansible_host                 = aws_instance.wnode[count.index].private_ip
     ansible_ssh_private_key_file = "/home/ubuntu/.ssh/id_rsa"
     node_hostname                = "worker-node-${count.index}"
+  }
+}
+
+data "template_file" "master_setup" {
+  template = "scripts/master-setup-template.sh"
+
+  vars = {
+    node_count = var.node_count
+    wnode_ips  = join(",", aws_instance.wnode.*.private_ip)
   }
 }
