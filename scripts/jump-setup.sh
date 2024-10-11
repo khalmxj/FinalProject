@@ -2,15 +2,21 @@
 # common + master-setup.sh
 
 # Change hostname
-sudo hostnamectl set-hostname master
+sudo hostnamectl set-hostname jump-node
 
-echo "I am in Master +common before apt update."
 # Update system
 sudo apt-get update -y
 sudo apt-get upgrade -y
 
 # Install dependencies
 sudo apt-get install -y curl gnupg software-properties-common sshpass openssh-server
+
+# Install Ansible on the master node
+sudo apt-add-repository --yes --update ppa:ansible/ansible
+sudo apt-get update -y
+sudo apt-get install -y ansible
+
+echo "Ansible install completed"
 
 # Generate SSH keys for passwordless authentication
 if [ ! -f /home/ubuntu/.ssh/id_rsa ]; then
@@ -26,3 +32,5 @@ fi
 
 # Append the new public key to authorized_keys on the master node
 cat /home/ubuntu/.ssh/id_rsa.pub | sudo tee -a /home/ubuntu/.ssh/authorized_keys > /dev/null
+
+echo "Ansible setup complete. Kubernetes configured."

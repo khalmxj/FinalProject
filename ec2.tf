@@ -4,6 +4,99 @@ resource "aws_key_pair" "k8s_key_pair" {
   public_key = file(var.publick_key)
 }
 
+# Create AWS-EC2 Jump host.
+resource "aws_instance" "team2jvs" {
+  ami                         = var.ami["jump-node"]
+  instance_type               = var.instance_type["jump-node"]
+  key_name                    = aws_key_pair.k8s_key_pair.key_name
+  associate_public_ip_address = true
+  subnet_id                   = aws_subnet.cluster-subnet.id
+  vpc_security_group_ids      = [aws_security_group.sg-k8s.id]
+
+  root_block_device {
+    volume_type = "gp2"
+    volume_size = 6
+  }
+  tags = {
+    Name = "jump-node"
+  }
+  # Copy the jump installation script
+  provisioner "file" {
+    source      = "scripts/jump-setup.sh"
+    destination = "/home/ubuntu/jump-setup.sh"
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.private_key)
+      host        = self.public_ip
+    }
+  }
+
+  # Setting permission to jump-setup which will update and install ansible
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x /home/ubuntu/jump-setup.sh",
+      "/home/ubuntu/jump-setup.sh"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.private_key)
+      host        = self.public_ip
+    }
+  }
+}#end of jump node block
+
+
+# Create AWS-EC2 Docker host
+
+resource "aws_instance" "docker-compose" {
+  ami                         = var.ami["dc-node"]
+  instance_type               = var.instance_type["dc-node"]
+  key_name                    = aws_key_pair.k8s_key_pair.key_name
+  associate_public_ip_address = true
+  subnet_id                   = aws_subnet.cluster-subnet.id
+  vpc_security_group_ids      = [aws_security_group.sg-k8s.id]
+
+  root_block_device {
+    volume_type = "gp2"
+    volume_size = 6
+  }
+  tags = {
+    Name = "dc-node"
+  }
+  # Copy the common installation script
+  provisioner "file" {
+    source      = "scripts/common-setup.sh"
+    destination = "/home/common-setup.sh"
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.private_key)
+      host        = self.public_ip
+    }
+  }
+
+  # Setting permission to dc-node on the common.sh files 
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x /home/ubuntu/common-setup.sh",
+      "/home/ubuntu/common-setup.sh"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.private_key)
+      host        = self.public_ip
+    }
+  }
+}#end of Docker-node block
+ 
+
 resource "aws_instance" "master" {
   ami                         = var.ami["master"]
   instance_type               = var.instance_type["master"]
@@ -38,11 +131,9 @@ resource "aws_instance" "master" {
   # setting permission to master-setup and ran 
   provisioner "remote-exec" {
     inline = [
-      #data.template_file.master_setup.rendered
+      #change the permissions on the file before running
       "chmod +x /home/ubuntu/master-setup.sh",
       "/home/ubuntu/master-setup.sh",
-      # "echo 'master ${self.private_ip}' >> /home/ubuntu/ips.txt",
-      # "for i in $(seq 0 $((${var.node_count} - 1))); do echo 'worker-${i} ${aws_instance.wnode[i].private_ip}' >> /home/ubuntu/ips.txt; done"
     ]
     connection {
       type        = "ssh"
@@ -51,50 +142,6 @@ resource "aws_instance" "master" {
       host        = self.public_ip
     }
   }
-  # Master node hots file update
-  # provisioner "remote-exec" {
-  #     inline = [
-  #       "sudo echo 'master ${self.private_ip}' | sudo tee -a /etc/hosts",
-  #       "sudo echo '[workers]' | sudo tee -a /etc/hosts",
-  #       # Backup existing Ansible hosts file
-  #       "sudo cp /etc/ansible/hosts /etc/ansible/hosts.bak",
-  #       #"sudo echo 'worker-${count.index} ${self.private_ip}' | sudo tee -a /etc/hosts",
-  #       "sudo cp /etc/hosts /etc/ansible/hosts",
-
-  #     ]
-  #   connection {
-  #       type        = "ssh"
-  #       user        = "ubuntu"
-  #       private_key = var.private_key
-  #       host        = self.public_ip
-  #     }
-  #   }
-  # Copy the Ansible playbook to the master node
-  # provisioner "file" {
-  #   source      = "playbook/kubernetes-setup.yaml"
-  #   destination = "/home/ubuntu/kubernetes-setup.yaml"
-  # connection {
-  #       type        = "ssh"
-  #       user        = "ubuntu"
-  #       private_key = var.private_key
-  #       host        = self.public_ip
-  #     }
-  # }
-  # # Run the Ansible playbook to set up Kubernetes
-  #   provisioner "remote-exec" {
-  #     inline = [
-  #       "sudo mv /home/ubuntu/kubernetes-setup.yaml /etc/ansible/kubernetes-setup.yaml",
-  #       "chmod +x /etc/ansible/kubernetes-setup.yaml",
-  #       "ansible-playbook /etc/ansible/kubernetes-setup.yaml"
-  #     ]
-
-  #     connection {
-  #       type        = "ssh"
-  #       user        = "ubuntu"
-  #       private_key = var.private_key
-  #       host        = self.public_ip
-  #     }
-  #   }
 }
 
 # Create Worker nodes for cluster
@@ -141,50 +188,16 @@ resource "aws_instance" "wnode" {
       host        = self.public_ip
     }
   }
-  # Worker node hosts file update
-  provisioner "remote-exec" {
-    inline = [
-      "echo 'worker-${count.index} ${self.private_ip}' | sudo tee -a /etc/hosts"
-    ]
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = file(var.private_key)
-      host        = self.public_ip
-    }
-  }
 }
 # Define Ansible Hosts
-resource "ansible_host" "master" {
-  depends_on = [aws_instance.master]
+resource "ansible_host" "team2jvs" {
+  depends_on = [aws_instance.team2jvs]
   name       = "controlplane"
   groups     = ["master"]
   variables = {
     ansible_user                 = "ubuntu"
-    ansible_host                 = aws_instance.master.private_ip
+    ansible_host                 = aws_instance.team2jvs.private_ip
     ansible_ssh_private_key_file = "/home/ubuntu/.ssh/id_rsa"
-    node_hostname                = "master"
-  }
-}
-
-resource "ansible_host" "worker" {
-  depends_on = [aws_instance.wnode]
-  count      = var.node_count
-  name       = "worker-node-${count.index}"
-  groups     = ["workers"]
-  variables = {
-    ansible_user                 = "ubuntu"
-    ansible_host                 = aws_instance.wnode[count.index].private_ip
-    ansible_ssh_private_key_file = "/home/ubuntu/.ssh/id_rsa"
-    node_hostname                = "worker-node-${count.index}"
-  }
-}
-
-data "template_file" "master_setup" {
-  template = "scripts/master-setup-template.sh"
-
-  vars = {
-    node_count = var.node_count
-    wnode_ips  = join(",", aws_instance.wnode.*.private_ip)
+    node_hostname                = "jump-node"
   }
 }
