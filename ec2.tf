@@ -4,52 +4,6 @@ resource "aws_key_pair" "k8s_key_pair" {
   public_key = file(var.publick_key)
 }
 
-# Create AWS-EC2 Jump host.
-resource "aws_instance" "team2jvs" {
-  ami                         = var.ami["jump-node"]
-  instance_type               = var.instance_type["jump-node"]
-  key_name                    = aws_key_pair.k8s_key_pair.key_name
-  associate_public_ip_address = true
-  subnet_id                   = aws_subnet.cluster-subnet.id
-  vpc_security_group_ids      = [aws_security_group.sg-k8s.id]
-
-  root_block_device {
-    volume_type = "gp2"
-    volume_size = 6
-  }
-  tags = {
-    Name = "jump-node"
-  }
-  # Copy the jump installation script
-  provisioner "file" {
-    source      = "scripts/jump-setup.sh"
-    destination = "/home/ubuntu/jump-setup.sh"
-
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = file(var.private_key)
-      host        = self.public_ip
-    }
-  }
-
-  # Setting permission to jump-setup which will update and install ansible
-  provisioner "remote-exec" {
-    inline = [
-      "chmod +x /home/ubuntu/jump-setup.sh",
-      "/home/ubuntu/jump-setup.sh"
-    ]
-
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = file(var.private_key)
-      host        = self.public_ip
-    }
-  }
-}#end of jump node block
-
-
 # Create AWS-EC2 Docker host
 
 resource "aws_instance" "docker-compose" {
@@ -94,8 +48,8 @@ resource "aws_instance" "docker-compose" {
       host        = self.public_ip
     }
   }
-}#end of Docker-node block
- 
+} #end of Docker-node block
+
 
 resource "aws_instance" "master" {
   ami                         = var.ami["master"]

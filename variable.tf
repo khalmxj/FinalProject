@@ -23,7 +23,7 @@ variable "ami" {
   default = {
     master      = "ami-0e8d228ad90af673b"
     worker-node = "ami-0e8d228ad90af673b"
-    jump-node = "ami-0e8d228ad90af673b"
+    jump-node   = "ami-0e8d228ad90af673b"
   }
 }
 
@@ -32,7 +32,7 @@ variable "instance_type" {
   default = {
     master      = "t2.medium"
     worker-node = "t2.micro"
-    jump-node = "t2.micro"
+    jump-node   = "t2.micro"
   }
 }
 
@@ -45,12 +45,12 @@ variable "secret_key" {
 }
 
 variable "publick_key" {
-  type = string
+  type    = string
   default = "~/.ssh/id_rsa.pub"
 }
 
 variable "private_key" {
-  type = string
+  type    = string
   default = "~/.ssh/id_rsa"
 }
 
